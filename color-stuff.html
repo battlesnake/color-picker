@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+<head>
+<style>
+body {
+	margin: 60px;
+	font-family: sans-serif;
+	font-weight: 600;
+}
+#picker {
+	position: relative;
+	display: inline-block;
+	width: 650px;
+}
+#picker>div {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+}
+#picker>img {
+	visibility: hidden;
+	width: 100%;
+	height: auto;
+	border: 0;
+}
+#output {
+	margin-top: 1em;
+	display: inline-block;
+	background: rgba(255, 255, 255, 0.2);
+	font-size: 200%;
+}
+</style>
+</head>
+<body>
+<h1>CSS colour picker</h1>
+<p>The view itself requires no JS - only the interactivity does.</p>
+<p>Mousewheel over the colour picker to alter the saturation</p>
+<div id="picker">
+	<img src="#">
+	<div style="background: linear-gradient(to right, red, yellow, green, cyan, blue, magenta, red)"></div>
+	<div style="background: #808080; opacity: 0;"></div>
+	<div style="background: linear-gradient(to bottom, white, rgba(255,255,255,0) 50%, rgba(0,0,0,0) 50%, black)"></div>
+</div>
+<br>
+<code id="output"></code>
+</body>
+<script>
+	/* Script only required for interactivity */
+	var picker = document.getElementById('picker');
+	var s = 1;
+	function hsl2rgb(hsl) {
+		var h = (hsl[0] % 1) + (hsl[0] < 0 ? 1 : 0);
+		var s = hsl[1];
+		var l = hsl[2];
+		var c = (1 - Math.abs(2 * l - 1)) * s;
+		var x = c * (1 - Math.abs(h * 6 % 2 - 1));
+		var m = l - c / 2;
+		var cx0 = [c, x, 0];
+		var rgbi = [
+			[0, 1, 2],
+			[1, 0, 2],
+			[2, 0, 1],
+			[2, 1, 0],
+			[1, 2, 0],
+			[0, 2, 1]
+		];
+		return rgbi[Math.floor(h * 6)].map(function (i) { return cx0[i] + m; });
+	}
+	function rgb2css(rgb) {
+		return 'rgb(' + rgb.map(function (v) { return Math.floor(v * 256); }).join(',') + ')';
+	}
+	function pickColor(event) {
+		var element = this;
+		var h = event.layerX / element.offsetWidth;
+		var l = 1 - (event.layerY / element.offsetHeight);
+		var css = rgb2css(hsl2rgb([h, s, l]));
+		document.getElementById('output').innerHTML = css;
+		document.body.style.background = css;
+	}
+	function changeSaturation(event) {
+		var element = picker;
+		var x = event.layerX - element.offsetLeft;
+		var y = event.layerY - element.offsetTop;
+		if (x < 0 || y < 0 || x >= picker.offsetWidth || y >= picker.offsetHeight) {
+			return;
+		}
+		var delta = event.deltaY || event.wheelDeltaY || event.detail;
+		s = s - (delta / Math.abs(delta) / 8);
+		s = s < 0 ? 0 : s > 1 ? s : s;
+		element.children[2].style.opacity = 1 - s;
+		pickColor.call(element, { layerX: x, layerY: y });
+	}
+	document.addEventListener(navigator.userAgent.match(/Firefox/i) ? 'DOMMouseScroll' : 'mousewheel', changeSaturation);
+	picker.addEventListener('mousemove', pickColor);
+</script>
+</html>
